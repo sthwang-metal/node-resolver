@@ -1,0 +1,22 @@
+---
+name: Test - Golang
+
+# Run for all pushes to main and pull requests when Go or YAML files change
+on:
+  push:
+  pull_request:
+
+jobs:
+  gotest:
+    name: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "go.mod"
+      - name: Run go tests
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic -tags testtools ./...

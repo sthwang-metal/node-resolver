@@ -1,0 +1,13 @@
+type Query {
+  """
+  Lookup a node by id.
+  """
+  node(
+    """
+    The ID of the node.
+    """
+    id: ID!
+  ): Node!
+}
+
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key","@external","@shareable","@tag","@override","@inaccessible","@interfaceObject"])
