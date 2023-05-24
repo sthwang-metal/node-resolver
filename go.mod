@@ -10,7 +10,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.3
 	github.com/vektah/gqlparser/v2 v2.5.1
-	go.infratographer.com/x v0.1.2
+	go.infratographer.com/x v0.1.3
 	go.uber.org/zap v1.24.0
 )
 

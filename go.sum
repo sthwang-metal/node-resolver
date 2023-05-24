@@ -369,6 +369,8 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 go.infratographer.com/x v0.1.2 h1:pey6S+eASJw1gIVjrTeC4RDx+GccPeOzZGXpMAuDBi0=
 go.infratographer.com/x v0.1.2/go.mod h1:7xBLWZljpP3nGZVrk9r1WDRdT9l4jydUOwxu5VvjATo=
+go.infratographer.com/x v0.1.3 h1:Be22DKuDH+yA8MqbXMONBxENjDyKIezXOMHyaPzlaGE=
+go.infratographer.com/x v0.1.3/go.mod h1:L81LzwY5fsn9BOG6xCs8Cw8XsfpWBMK7CmpTTGqMzHs=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
