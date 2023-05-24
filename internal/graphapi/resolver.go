@@ -15,7 +15,17 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrMissingNodeInterface = errors.New("interface for Node missing from schema")
+type ErrInvalidSchema struct {
+	message string
+}
+
+func (e ErrInvalidSchema) Error() string {
+	return e.message
+}
+
+func newInvalidSchemaError(s string) error {
+	return ErrInvalidSchema{message: s}
+}
 
 // Resolver provides a graph response resolver
 type Resolver struct {
@@ -23,7 +33,9 @@ type Resolver struct {
 	schemaDoc     *ast.SchemaDocument
 	prefixMap     map[string]*graphql.Object
 	interfaceMap  map[string]*graphql.Interface
+	scalars       map[string]*graphql.Scalar
 	handlerSchema graphql.Schema
+	entities      *graphql.Union
 }
 
 // NewResolver returns a resolver configured with the given logger
@@ -32,6 +44,11 @@ func NewResolver(logger *zap.SugaredLogger, rawSchema string) (*Resolver, error)
 		logger:       logger,
 		prefixMap:    map[string]*graphql.Object{},
 		interfaceMap: map[string]*graphql.Interface{},
+		scalars: map[string]*graphql.Scalar{
+			"_Any": {
+				PrivateName: "_Any",
+			},
+		},
 	}
 
 	schema, err := parser.ParseSchemas(&ast.Source{
@@ -42,7 +59,6 @@ func NewResolver(logger *zap.SugaredLogger, rawSchema string) (*Resolver, error)
 	}
 
 	r.schemaDoc = schema
-
 	for _, obj := range r.schemaDoc.Definitions {
 		if len(obj.Interfaces) == 0 {
 			// this definition isn't a object that has interfaces, skip it
@@ -54,7 +70,7 @@ func NewResolver(logger *zap.SugaredLogger, rawSchema string) (*Resolver, error)
 		for _, i := range obj.Interfaces {
 			gi, ok := r.interfaceMap[i]
 			if !ok {
-				gi = graphInterfaceFor(i)
+				gi = r.graphInterfaceFor(i)
 				r.interfaceMap[i] = gi
 			}
 
@@ -77,7 +93,11 @@ func NewResolver(logger *zap.SugaredLogger, rawSchema string) (*Resolver, error)
 		// This value has the quotes in it, so we need to strip those
 		prefix = strings.Trim(prefix, `"`)
 
-		r.prefixMap[prefix] = graphTypeFor(obj.Name, ifaces)
+		r.prefixMap[prefix] = r.graphTypeFor(obj.Name, prefix, ifaces)
+	}
+
+	if len(r.prefixMap) == 0 {
+		return nil, newInvalidSchemaError("schema has no valid objet types")
 	}
 
 	q, err := r.Query()
@@ -96,7 +116,7 @@ func NewResolver(logger *zap.SugaredLogger, rawSchema string) (*Resolver, error)
 	return r, nil
 }
 
-func graphTypeFor(name string, interfaces []*graphql.Interface) *graphql.Object {
+func (r *Resolver) graphTypeFor(name string, prefix string, interfaces []*graphql.Interface) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: name,
 		Fields: graphql.Fields{
@@ -104,18 +124,33 @@ func graphTypeFor(name string, interfaces []*graphql.Interface) *graphql.Object 
 				Type:        graphql.NewNonNull(graphql.ID),
 				Description: "The id of the node.",
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					if node, ok := p.Source.(*Node); ok {
-						return node.ID, nil
+					switch o := p.Source.(type) {
+					case *Node:
+						return o.ID, nil
+					case *Entity:
+						return o.ID, nil
+					default:
+						return nil, errors.New("invalid node type")
 					}
-					return "", errors.New("invalid node type")
 				},
 			},
+		},
+		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
+			// TODO: This should be able to check account the name of the type instead :thinking-face:
+			switch o := p.Value.(type) {
+			case *Node:
+				return o.ID.Prefix() == prefix
+			case *Entity:
+				return o.ID.Prefix() == prefix
+			default:
+				return false
+			}
 		},
 		Interfaces: interfaces,
 	})
 }
 
-func graphInterfaceFor(name string) *graphql.Interface {
+func (r *Resolver) graphInterfaceFor(name string) *graphql.Interface {
 	return graphql.NewInterface(graphql.InterfaceConfig{
 		Name: name,
 		Fields: graphql.Fields{
@@ -125,12 +160,14 @@ func graphInterfaceFor(name string) *graphql.Interface {
 			},
 		},
 		ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object {
-			node, ok := p.Value.(*Node)
-			if !ok {
+			switch o := p.Value.(type) {
+			case *Node:
+				return o.GraphType
+			case *Entity:
+				return r.entityTypeResolver(graphql.ResolveTypeParams{Value: o})
+			default:
 				return nil
 			}
-
-			return node.GraphType
 		},
 	})
 }
@@ -138,7 +175,7 @@ func graphInterfaceFor(name string) *graphql.Interface {
 func (r *Resolver) Query() (*graphql.Object, error) {
 	nodeInt, ok := r.interfaceMap["Node"]
 	if !ok {
-		return nil, ErrMissingNodeInterface
+		return nil, newInvalidSchemaError("interface for Node missing from schema")
 	}
 
 	return graphql.NewObject(graphql.ObjectConfig{
@@ -149,7 +186,7 @@ func (r *Resolver) Query() (*graphql.Object, error) {
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{
 						Description: "ID of the node",
-						Type:        graphql.ID,
+						Type:        graphql.NewNonNull(graphql.ID),
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -160,6 +197,16 @@ func (r *Resolver) Query() (*graphql.Object, error) {
 					return r.GetNode(id)
 				},
 			},
+			"_entities": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.NewList(r.entitiesUnion())),
+				Args: graphql.FieldConfigArgument{
+					"representations": &graphql.ArgumentConfig{
+						Description: "ID of the node",
+						Type:        graphql.NewNonNull(graphql.NewList(r.scalars["_Any"])),
+					},
+				},
+				Resolve: r.entitiesResolver,
+			},
 		},
 	}), nil
 }
@@ -167,6 +214,12 @@ func (r *Resolver) Query() (*graphql.Object, error) {
 func (r *Resolver) GraphTypes() []graphql.Type {
 	objs := []graphql.Type{}
 	for _, obj := range r.prefixMap {
+		objs = append(objs, obj)
+	}
+
+	objs = append(objs, r.entitiesUnion())
+
+	for _, obj := range r.scalars {
 		objs = append(objs, obj)
 	}
 
@@ -188,6 +241,7 @@ func (r *Resolver) GraphHandler(ctx echo.Context) error {
 	if err := json.NewDecoder(ctx.Request().Body).Decode(&p); err != nil {
 		return err
 	}
+	r.logger.Infow("request info", "postData.Query", p.Query, "postData.Operation", p.Operation, "postdata.Variables", p.Variables)
 	result := graphql.Do(graphql.Params{
 		Context:        ctx.Request().Context(),
 		Schema:         r.handlerSchema,
