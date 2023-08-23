@@ -1,0 +1,71 @@
+image:
+  repository: ghcr.io/infratographer/node-resolver
+  pullPolicy: IfNotPresent
+  tag: "main-latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  sessionAffinity: None
+  annotations: {}
+
+ingress:
+  enabled: false
+  annotations: {}
+  hosts: []
+  tls: {}
+
+api:
+  replicas: 1
+  listenPort: 7904
+  extraLabels: {}
+  extraAnnotations: {}
+  extraEnvVars []:
+  #- value: ""
+  #  name: NODERESOLVER_VAR
+  resources: {}
+  podSecurityContext: {}
+  securityContext: {}
+
+  tracing:
+    # enabled is true if OpenTelemetry tracing should be enabled for permissions-api
+    enabled: false
+    # environment is the OpenTelemetry tracing environment to use
+    environment: ""
+    # provider is the OpenTelemetry tracing provider to use
+    provider: stdout
+    jaeger:
+      # endpoint is the Jaeger collector to send traces to
+      endpoint: ""
+      # user is the user to use when authenticating against the Jaeger deployment
+      user: ""
+      # password is the password to use when authenticating against the Jaeger deployment
+      password: ""
+    otlp:
+      # endpoint is the OpenTelemetry Protocol (OTLP) collector endpoint to send traces to
+      endpoint: ""
+      # insecure is true if TLS should not be required when sending traces
+      insecure: false
+
+  shutdownGracePeriod: 5s
+  trustedProxies: []
+  # - "1.2.3.4"
+  # - "1.2.3.4/32"
+  # - "1.2.3.0/24"
+
+reloader:
+  enabled: false

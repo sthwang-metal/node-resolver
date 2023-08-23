@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.names.fullname" . }}-config
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+data:
+  NODERESOLVER_SERVER_LISTEN: ":{{ .Values.api.listenPort }}"
+  NODERESOLVER_SERVER_SHUTDOWN_GRACE_PERIOD: "{{ .Values.api.shutdownGracePeriod }}"
+{{- if .Values.api.tracing.enabled }}
+  NODERESOLVER_TRACING_ENABLED: "{{ .Values.api.tracing.enabled }}"
+  NODERESOLVER_TRACING_PROVIDER: "{{ .Values.api.tracing.provider }}"
+  NODERESOLVER_TRACING_ENVIRONMENT: "{{ .Values.api.tracing.environment }}"
+{{- if eq .Values.api.tracing.provider "jaeger" }}
+  NODERESOLVER_TRACING_JAEGER_ENDPOINT: "{{ .Values.api.tracing.jaeger.endpoint }}"
+  NODERESOLVER_TRACING_JAEGER_USER: "{{ .Values.api.tracing.jaeger.user }}"
+  NODERESOLVER_TRACING_JAEGER_PASSWORD: "{{ .Values.api.tracing.jaeger.password }}"
+{{- end }}
+{{- if eq .Values.api.tracing.provider "otlpgrpc" }}
+  NODERESOLVER_TRACING_OTLP_ENDPOINT: "{{ .Values.api.tracing.otlp.endpoint }}"
+  NODERESOLVER_TRACING_OTLP_INSECURE: "{{ .Values.api.tracing.otlp.insecure }}"
+  NODERESOLVER_TRACING_OTLP_CERTIFICATE: "{{ .Values.api.tracing.otlp.certificate }}"
+{{- end }}
+{{- end }}
+{{- with .Values.api.trustedProxies }}
+  NODERESOLVER_SERVER_TRUSTED_PROXIES: "{{ join " " . }}"
+{{- end }}

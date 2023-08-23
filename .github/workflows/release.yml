@@ -5,6 +5,22 @@ on:
       - v**
 
 jobs:
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Publish Helm charts
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          token: ${{ secrets.RELEASEBOT_PAT }}
+          charts_dir: chart
+          charts_url: "https://infratographer.github.io/charts"
+          repository: "charts"
+          app_version: ${{  github.ref_name }}
+          chart_version: ${{  github.ref_name }}
+          branch: gh-pages
+
   goreleaser:
     runs-on: ubuntu-latest
     permissions:
