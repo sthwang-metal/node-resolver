@@ -50,5 +50,11 @@ type Location implements Node & MetadataNode
   id: ID!
 }
 
+type LoadBalancer implements Node & MetadataNode
+  @key(fields: "id")
+  @prefixedID(prefix: "loadbal") {
+  id: ID!
+}
+
 extend schema
   @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
