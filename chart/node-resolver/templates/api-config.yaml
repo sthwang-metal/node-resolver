@@ -7,6 +7,9 @@ metadata:
     {{- include "common.labels.standard" . | nindent 4 }}
 data:
   NODERESOLVER_SERVER_LISTEN: ":{{ .Values.api.listenPort }}"
+{{- if .Values.schemaFile.override }}
+  NODERESOLVER_SCHEMA: /schema.graphql
+{{- end}}
   NODERESOLVER_SERVER_SHUTDOWN_GRACE_PERIOD: "{{ .Values.api.shutdownGracePeriod }}"
 {{- if .Values.api.tracing.enabled }}
   NODERESOLVER_TRACING_ENABLED: "{{ .Values.api.tracing.enabled }}"
@@ -25,4 +28,16 @@ data:
 {{- end }}
 {{- with .Values.api.trustedProxies }}
   NODERESOLVER_SERVER_TRUSTED_PROXIES: "{{ join " " . }}"
+{{- end }}
+{{- if .Values.schemaFile.override }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.names.fullname" . }}-schema-config
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+data:
+  schema.graphql: |-
+{{ .Values.schemaFile.content | indent 4 }}
 {{- end }}

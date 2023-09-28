@@ -29,9 +29,17 @@ ingress:
   hosts: []
   tls: {}
 
+# the default graphql schema is provided by this repo `schema.graphql`, to override this and 
+# mount a new file, set override to true and pass the schema in an additional values file
+schemaFile:
+  override: false
+  content: |
+    # Use values-schema.yaml to override this
+
 api:
   replicas: 1
   listenPort: 7904
+
   extraLabels: {}
   extraAnnotations: {}
   extraEnvVars []:
