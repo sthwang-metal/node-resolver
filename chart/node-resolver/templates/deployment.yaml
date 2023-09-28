@@ -57,6 +57,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - serve
+          {{- if .Values.schemaFile.override }}
+            - --schema
+            - /schema.graphql
+          {{- end}}
           ports:
             - name: http
               containerPort: {{ .Values.api.listenPort | default "8080" }}

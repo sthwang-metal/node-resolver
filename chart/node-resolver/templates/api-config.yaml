@@ -7,9 +7,6 @@ metadata:
     {{- include "common.labels.standard" . | nindent 4 }}
 data:
   NODERESOLVER_SERVER_LISTEN: ":{{ .Values.api.listenPort }}"
-{{- if .Values.schemaFile.override }}
-  NODERESOLVER_SCHEMA: /schema.graphql
-{{- end}}
   NODERESOLVER_SERVER_SHUTDOWN_GRACE_PERIOD: "{{ .Values.api.shutdownGracePeriod }}"
 {{- if .Values.api.tracing.enabled }}
   NODERESOLVER_TRACING_ENABLED: "{{ .Values.api.tracing.enabled }}"
