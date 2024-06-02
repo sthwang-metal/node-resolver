@@ -7,7 +7,7 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v1.7.0
-	github.com/spf13/viper v1.15.0
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vektah/gqlparser/v2 v2.5.1
 	go.infratographer.com/x v0.1.3
